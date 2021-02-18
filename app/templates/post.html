@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container" style="margin-top: 50px">
+    <h2>需求编号：{{post.id}}</h2>
+    <h5 class="page-header">&nbsp;</h5>
+
+    <div class="row">
+        <table class="table table-hover">
+          <tbody>
+
+            <tr>
+              <td><h5>需求类型:</h5></td>
+              <td><h5>
+                  {% if post.post_direction == 0%}
+                            卖出
+                        {% else %}
+                            买入
+                        {% endif %}
+              </h5></td>
+            </tr>
+             <tr>
+                <td><h5>需求数量：</h5></td>
+                <td><h5>{{ post.post_value }}</h5></td>
+            </tr>
+            <tr>
+              <td><h5>发布时间：</h5></td>
+              <td><h5>{{ post.start_date }}</h5></td>
+            </tr>
+            <tr>
+              <td><h5>截止时间：</h5></td>
+              <td><h5>{{ post.end_date }}</h5></td>
+            </tr>
+            <tr>
+              <td><h5>发布人：</h5></td>
+              <td><h5>{{ post._user.contact_name}}</h5></td>
+            </tr>
+            <tr>
+              <td><h5>联系电话：</h5></td>
+              <td><h5>{{ post._user.phone}}</h5></td>
+            </tr>
+            <tr>
+              <td><h5>状态：</h5></td>
+              <td><h5>{{ post.posttypename |replace('<PostType \'', '')|replace('\'>', '') }}</h5></td>
+            </tr>
+            {% if post.remark %}
+            <tr>
+              <td><h5>附言：</h5></td>
+              <td><h5>{{ post.remark }}</h5></td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+    </div>
+    {% if current_user.id == post.userid %}
+        {% if post.post_type_id ==1 or post.post_type_id ==2 %}
+            <div style="margin-top: 10px; margin-bottom: 50px">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <h7>状态编辑：</h7>
+
+                <button id=3 type="button" class="btn btn-info" data-toggle="modal" data-target="#confirm_modal" onclick="aPassValueFunction(this)" >已部分成交</button>
+                <button id=4 type="button" class="btn btn-primary" data-toggle="modal" data-target="#confirm_modal" onclick="aPassValueFunction(this)">已全部成交</button>
+            </div>
+        {% endif %}
+        {% if post.post_type_id ==1 %}
+    <div class="row" align="center">
+        <div class="alert alert-success"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span><h6>如果您需要协助您完成该融资，请点击下方投行服务按钮：</h6></div>
+        <button id=2 type="button" class="btn btn-success btn-block" data-toggle="modal" data-target="#confirm_modal" onclick="aPassValueFunction(this)">投行服务</button>
+    </div>
+        {% endif %}
+    {% endif %}
+
+
+</div>
+
+
+
+<div class="modal" tabindex="-1" role="dialog" id="confirm-modal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">确认</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>请确认是否删除？</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+
+        <form id="post-form" action="{{ url_for('posts') }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input name="pass_value" type="hidden" value="pass_value" id="hidden_input">
+        <input class="btn btn-danger" type="submit" name="submit_button" value="确认">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    function aPassValueFunction(obj){
+        let valuefromID = obj.id;
+        $("#post-form").attr("action", "/post/"+{{ post.id}} +"/"+valuefromID+"/change");
+        $('#hidden_input').val(valuefromID);
+        $("#confirm-modal").modal("show");
+    }
+</script>
+{% endblock %}

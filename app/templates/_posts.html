@@ -1,0 +1,93 @@
+{% from 'bootstrap/table.html' import render_table %}
+
+{% if posts %}
+
+<!-- {{ render_table(posts, show_actions=True) }} --!>
+
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>编号</th>
+          <th>类型</th>
+          <th>数量</th>
+          <th>发布时间</th>
+          <th>截止时间</th>
+            <th>状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+       {% for post in posts %}
+
+            <tr>
+                <td>{{ post.id }}</td>
+                <td>
+                    {% if post.post_direction == 0%}
+                        卖出
+                    {% else %}
+                        买入
+                    {% endif %}
+                </td>
+                <td>{{ post.post_value}}</td>
+                <td> {{ post.start_date|string|truncate(length=21)}}</td>
+                <td>{{ post.end_date|string|truncate(length=21)}}</td>
+                <td>{{ post.posttypename |replace('<PostType \'', '')|replace('\'>', '') }}</td>
+                <td>
+                    <a href="/post/{{ post.id }}/view"><img src="/static/img/view.svg" alt="View"></a>
+
+                    {% if current_user.id == post.userid or current_user._role.name == 'Administrator'%}
+                        <!-- <a href="/post/{{ post.id }}/edit"><img src="/static/img/edit.svg" alt="Edit"></a> -->
+
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <input  id="{{ post.id }}" type="image" src="/static/img/delete.svg" alt="Delete" data-toggle="modal" data-target="#confirm_modal" onclick="aPassValueFunction(this)" >
+
+                    {% endif %}
+
+                </td>
+            </tr>
+       {% endfor %}
+      </tbody>
+    </table>
+
+
+{% else %}
+    <div class="tip">
+        <h5>No posts yet.</h5>
+    </div>
+
+{% endif %}
+
+
+ <div class="modal" tabindex="-1" role="dialog" id="confirm-modal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">确认</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>请确认是否删除？</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+
+        <form id="post-form" action="{{ url_for('posts') }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <input name="pass_value" type="hidden" value="pass_value" id="hidden_input">
+        <input class="btn btn-danger" type="submit" name="submit_button" value="确认">
+      </div>
+    </div>
+  </div>
+</div>
+
+    <script>
+        function aPassValueFunction(obj){
+            let valuefromID = obj.id;
+            $("#post-form").attr("action", "/post/"+ valuefromID+"/delete");
+            $('#hidden_input').val(valuefromID);
+            $("#confirm-modal").modal("show");
+        }
+    </script>
+

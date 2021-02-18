@@ -1,0 +1,59 @@
+<!-- extend base layout -->
+{% extends 'base.html' %}
+{% from 'bootstrap/form.html' import render_form, render_field, render_form_row %}
+
+{% block content %}
+<div class="container" style="margin-top: 50px">
+  <h2>{{title}}</h2>
+  <h5 class="page-header">&nbsp;</h5>
+  <div class="row">
+      <div class="col-xl-4 col-md-6">
+          <div class="card bg-primary text-white mb-4">
+              <div class="card-body">持有可用股权数量</div>
+              <div class="card-footer d-flex align-items-center " style="text-align: center">{{ useble_value }}
+            </div>
+          </div>
+      </div>
+      <div class="col-xl-4 col-md-6">
+          <div class="card bg-warning text-white mb-4">
+              <div class="card-body">已发布转让数量</div>
+              <div class="card-footer d-flex align-items-center justify-content-between">{{ post_amount }}
+               </div>
+          </div>
+      </div>
+      <div class="col-xl-4 col-md-6">
+          <div class="card bg-success text-white mb-4">
+              <div class="card-body">可发布最大转让数量</div>
+              <div class="card-footer d-flex align-items-center justify-content-between">
+                  {% if avalibe_value <= 0 %}
+                        无可用转让数量
+                  {% else %}
+                        {{ avalibe_value }}
+                  {% endif %}
+
+              </div>
+          </div>
+      </div>
+<!--      <div class="col-xl-3 col-md-6">-->
+<!--          <div class="card bg-danger text-white mb-4">-->
+<!--              <div class="card-body">Danger Card</div>-->
+<!--              <div class="card-footer d-flex align-items-center justify-content-between">-->
+<!--                  <a class="small text-white stretched-link" href="#">View Details</a>-->
+<!--                  <div class="small text-white"><svg class="svg-inline&#45;&#45;fa fa-angle-right fa-w-8" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="angle-right" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 512" data-fa-i2svg=""><path fill="currentColor" d="M224.3 273l-136 136c-9.4 9.4-24.6 9.4-33.9 0l-22.6-22.6c-9.4-9.4-9.4-24.6 0-33.9l96.4-96.4-96.4-96.4c-9.4-9.4-9.4-24.6 0-33.9L54.3 103c9.4-9.4 24.6-9.4 33.9 0l136 136c9.5 9.4 9.5 24.6.1 34z"></path></svg>&lt;!&ndash; <i class="fas fa-angle-right"></i> Font Awesome fontawesome.com &ndash;&gt;</div>-->
+<!--              </div>-->
+<!--          </div>-->
+<!--      </div>-->
+  </div>
+    <form action = "/postreq" method = post>
+      {{ form.hidden_tag() }}
+      {{ render_field(form.lasting_days) }}
+      {{ render_field(form.postvalue) }}
+      {{ render_field(form.postdirection) }}
+        {{ render_field(form.remark) }}
+       <div class="form-inline">{{ render_field(form.disclimaer) }}<h7><a href="baidu.com">用户协议</a></h7></div><br>
+      {{ render_field(form.submit,button_style='success', button_size='block') }}
+      </form>
+
+
+</div>
+{% endblock %}
