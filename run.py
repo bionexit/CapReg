@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@desc:
+@desc: initialise the sys.
 @author:
 @contact:
 @version:
