@@ -5,11 +5,16 @@ from flask_sqlalchemy import SQLAlchemy,inspect
 from flask_login import LoginManager
 from flask_bootstrap import Bootstrap
 from flask_wtf import CSRFProtect
+from flask_simple_captcha import CAPTCHA
+import config
+
 
 app = Flask(__name__)
 app.config.from_object('config')
 db = SQLAlchemy(app)
 
+CAPTCHA = CAPTCHA(config=config.CAPTCHA_CONFIG)
+app = CAPTCHA.init_app(app)
 
 Bootstrap(app)
 

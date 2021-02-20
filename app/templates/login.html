@@ -74,7 +74,10 @@
                                             </div> !-->
                                                 {{ render_field(form.username) }}
                                                 {{ render_field(form.password) }}
+                                              <div style="margin-top:20px" class="">验证码<br>{{ captcha_html(captcha) | safe }}</div>
+
                                                 {{ render_field(form.remember_me) }}
+
                                                 <div class="form-inline">{{ render_field(form.disclimaer) }}<h7><a href="baidu.com">用户协议</a></h7></div>
                                                 <br>
                                                 {{ render_field(form.submit,button_style='success', button_size='block') }}

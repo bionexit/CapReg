@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from app import app, db, models
+from app import app, db, models,CAPTCHA
 from flask import render_template, flash, redirect, Blueprint, url_for, request, session
 from .forms import *
 from flask_login import current_user, login_required, login_user, logout_user,login_manager
 import datetime
 from app.extension.utils import redirect_back
 from sqlalchemy import and_
+
 
 def flash_errors(form):
     """Flashes form errors"""
@@ -22,23 +23,6 @@ def flash_errors(form):
 @app.route('/index')
 @login_required
 def index(page=None):
-    # user = {'nickname': 'Miguel'}# fake user
-    # posts = [  # fake array of posts
-    #     {
-    #         'author': {'nickname': 'John'},
-    #         'body': 'Beautiful day in Portland!'
-    #     },
-    #     {
-    #         'author': { 'nickname': 'Susan' },
-    #         'body': 'The Avengers movie was so cool!'
-    #     }
-    # ]
-    #
-    # ses = session.get('username')
-    # return render_template("index.html",
-    #     title='主页',
-    #     user=ses,
-    #     posts=posts)
     return redirect(url_for("posts"))
 
 
@@ -46,74 +30,80 @@ def index(page=None):
 def login():
     import app.extension.api as ext  # 外部接口查询
     form = LoginForm()
-    if form.validate_on_submit():
+    if form.validate_on_submit() and request.method == 'POST':
         user = models.User.query.filter_by(username=form.username.data.strip().lower()).first()
         user_has_password_bol = False
-        if user is not None:  # 数据库中有用户名数据
-            try:
-                if (user.verify_password(form.password.data)):
-                    user_has_password_bol = True
-            except:
-                pass
-            if user_has_password_bol:  # 检查用户密码是否匹配
+        c_hash = request.form.get('captcha-hash')
+        c_text = request.form.get('captcha-text')
+        if CAPTCHA.verify(c_text, c_hash):
+            if user is not None:  # 数据库中有用户名数据
+                try:
+                    if (user.verify_password(form.password.data)):
+                        user_has_password_bol = True
+                except:
+                    pass
+                if user_has_password_bol:  # 检查用户密码是否匹配
 
-                if user._role.name == 'Administrator':
-                    flash('管理員登录成功', 'info')
-                    session['admin'] = True
-                    login_user(user, form.remember_me.data)
-                    session['username'] = user.username
-                    return redirect(url_for('index'))
-                else:
-                    if app.config['ALLOW_LOCAL_USER_LOGIN']:
+                    if user._role.name == 'Administrator':
+                        flash('管理員登录成功', 'info')
+                        session['admin'] = True
                         login_user(user, form.remember_me.data)
                         session['username'] = user.username
-                        flash('普通用戶登录成功', 'info')
+                        return redirect(url_for('index'))
+                    else:
+                        if app.config['ALLOW_LOCAL_USER_LOGIN']:
+                            login_user(user, form.remember_me.data)
+                            session['username'] = user.username
+                            flash('普通用戶登录成功', 'info')
+                            return redirect(request.args.get('next') or url_for('index'))
+                        else:
+                            flash('不允许内部用户登陆，请联系管理员', 'warning')
+                else:
+                    result = ext.tradesysauth(username=form.username.data,password=form.password.data)
+                    if result is True:
+                        login_user(user, form.remember_me.data)
+
+                        # 读取当前可用数量[vlue_usble] def value,
+                        value_usble = 0
+                        print(user.username)
+                        value_usble = []
+                        value_usble = ext.tradesysvalue(username=form.username.data.strip().lower())
+                        value_insert = value_usble[0]['postvalue']
+                        print(value_insert)
+                        user.value_usble = value_insert
+                        db.session.commit()
+                        # db.session.close()
+
+                        flash('普通用戶外部記錄登录成功', 'info')
+                        session['value_usble'] = value_usble
+                        # session['username'] = user.username
+
                         return redirect(request.args.get('next') or url_for('index'))
                     else:
-                        flash('不允许内部用户登陆，请联系管理员', 'warning')
+                        flash('密码错误', 'warning')
+
             else:
                 result = ext.tradesysauth(username=form.username.data,password=form.password.data)
+                # 从持仓库中查询是否有持仓记录
                 if result is True:
-                    login_user(user, form.remember_me.data)
-
-                    # 读取当前可用数量[vlue_usble] def value,
-                    value_usble = 0
-                    print(user.username)
-                    value_usble = []
-                    value_usble = ext.tradesysvalue(username=form.username.data.strip().lower())
-                    value_insert = value_usble[0]['postvalue']
-                    print(value_insert)
-                    user.value_usble = value_insert
+                    userinitinfo = ext.tradesysvalue(form.username.data)
+                    add_user = models.User(username=form.username.data.strip().lower(),reg_date=datetime.datetime.now(),
+                                           phone=userinitinfo[0]['phone']+'abc',
+                                           contact_name=userinitinfo[0]['contact_name'],
+                                           trade_num=userinitinfo[0]['trade_num'],
+                                           value_usble=userinitinfo[0]['postvalue'],)
+                    db.session.add(add_user)
                     db.session.commit()
                     # db.session.close()
-
-                    flash('普通用戶外部記錄登录成功', 'info')
-                    session['value_usble'] = value_usble
-                    # session['username'] = user.username
-
-                    return redirect(request.args.get('next') or url_for('index'))
+                    flash('首次登陆成功并完成数据同步，请重新登陆', 'info')
+                    return redirect(url_for('login'))
                 else:
                     flash('密码错误', 'warning')
-
         else:
-            result = ext.tradesysauth(username=form.username.data,password=form.password.data)
-            # 从持仓库中查询是否有持仓记录
-            if result is True:
-                userinitinfo = ext.tradesysvalue(form.username.data)
-                add_user = models.User(username=form.username.data.strip().lower(),reg_date=datetime.datetime.now(),
-                                       phone=userinitinfo[0]['phone']+'abc',
-                                       contact_name=userinitinfo[0]['contact_name'],
-                                       trade_num=userinitinfo[0]['trade_num'],
-                                       value_usble=userinitinfo[0]['postvalue'],)
-                db.session.add(add_user)
-                db.session.commit()
-                # db.session.close()
-                flash('首次登陆成功并完成数据同步，请重新登陆', 'info')
-                return redirect(url_for('login'))
-            else:
-                flash('密码错误', 'warning')
-    if current_user.is_authenticated is not True:
-        return render_template('login.html',title='登陆', form = form)
+            flash('验证码错误','warning')
+    if current_user.is_authenticated is not True and request.method == 'GET':
+        captcha = CAPTCHA.create()
+        return render_template('login.html',title='登陆', form = form,captcha=captcha)
     else:
         return redirect(url_for('index'))
 
